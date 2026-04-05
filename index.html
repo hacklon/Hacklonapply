@@ -248,10 +248,10 @@ textarea.field{min-height:110px;line-height:1.65}
   <!-- Settings -->
   <div class="settings-toggle" onclick="toggleSettings()">
     <span>⚙ Settings (name · message · resume · gmail)</span>
-    <span class="chevron" id="chevron">▼</span>
+    <span class="chevron open" id="chevron">▼</span>
   </div>
 
-  <div class="settings-panel hidden" id="settingsPanel">
+  <div class="settings-panel" id="settingsPanel">
 
     <!-- Gmail auth -->
     <div>
@@ -281,13 +281,13 @@ textarea.field{min-height:110px;line-height:1.65}
     <!-- Subject -->
     <div>
       <label class="field-label">EMAIL SUBJECT</label>
-      <input class="field" type="text" id="subject" placeholder="Application for [Role] – Your Name" oninput="saveSettings()"/>
+      <input class="field" type="text" id="subject" placeholder="Application for [Role] – Your Name" oninput="saveSettings()" onkeyup="saveSettings()"/>
     </div>
 
     <!-- Body -->
     <div>
       <label class="field-label">EMAIL BODY</label>
-      <textarea class="field" id="body" rows="8" oninput="saveSettings()"></textarea>
+      <textarea class="field" id="body" rows="8" oninput="saveSettings()" onkeyup="saveSettings()"></textarea>
     </div>
 
     <!-- Resume -->
