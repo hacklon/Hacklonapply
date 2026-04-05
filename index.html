@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QuickApply</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080b;
+  --card:#0f1116;
+  --border:#1e2128;
+  --border2:#2a2d38;
+  --accent:#00e5a0;
+  --accent-dim:rgba(0,229,160,.1);
+  --accent-glow:rgba(0,229,160,.3);
+  --text:#dde1f0;
+  --muted:#555a6b;
+  --r:16px;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(0,229,160,.07) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+.card{
+  position:relative;z-index:1;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:24px;padding:40px 36px;
+  width:100%;max-width:480px;
+  box-shadow:0 32px 80px rgba(0,0,0,.5);
+}
+
+/* Header */
+.logo{
+  display:flex;align-items:center;gap:10px;margin-bottom:32px;
+}
+.logo-icon{
+  width:38px;height:38px;background:var(--accent);
+  border-radius:10px;display:grid;place-items:center;
+  font-size:18px;flex-shrink:0;
+}
+.logo-text{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.logo-text span{color:var(--accent)}
+
+/* Status chips */
+.chips{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:99px;padding:5px 12px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
+  border:1px solid;
+}
+.chip.green{background:var(--accent-dim);border-color:rgba(0,229,160,.25);color:var(--accent)}
+.chip.grey{background:rgba(255,255,255,.04);border-color:var(--border2);color:var(--muted)}
+.chip.orange{background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25);color:#f5a623}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.chip.green .dot{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Main input */
+.main-label{
+  font-size:12px;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:.07em;margin-bottom:8px;
+}
+.email-input{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1.5px solid var(--border2);border-radius:12px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:14px;padding:14px 16px;outline:none;
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.email-input:focus{
+  border-color:var(--accent);
+  background:rgba(0,229,160,.04);
+  box-shadow:0 0 0 3px rgba(0,229,160,.1);
+}
+.email-input::placeholder{color:var(--muted)}
+
+/* Send button */
+.btn-send{
+  width:100%;margin-top:14px;
+  background:var(--accent);color:#07080b;
+  border:none;border-radius:12px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:800;
+  padding:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:transform .15s,box-shadow .15s,opacity .2s;
+  box-shadow:0 6px 28px var(--accent-glow);
+  letter-spacing:-.01em;
+}
+.btn-send:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 36px rgba(0,229,160,.45)}
+.btn-send:active:not(:disabled){transform:translateY(0)}
+.btn-send:disabled{opacity:.35;cursor:not-allowed}
+
+/* Settings toggle */
+.settings-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:24px;padding-top:20px;
+  border-top:1px solid var(--border);
+  cursor:pointer;user-select:none;
+}
+.settings-toggle span{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.chevron{font-size:12px;color:var(--muted);transition:transform .2s}
+.chevron.open{transform:rotate(180deg)}
+
+/* Settings panel */
+.settings-panel{display:none;margin-top:16px;display:flex;flex-direction:column;gap:14px}
+.settings-panel.hidden{display:none}
+
+label.field-label{
+  display:block;font-size:11px;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.07em;margin-bottom:6px;
+}
+input.field, textarea.field{
+  width:100%;background:rgba(255,255,255,.03);
+  border:1px solid var(--border2);border-radius:9px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:12px;padding:10px 13px;outline:none;
+  transition:border-color .2s;resize:vertical;
+}
+input.field:focus,textarea.field:focus{border-color:rgba(0,229,160,.35)}
+textarea.field{min-height:110px;line-height:1.65}
+
+/* Upload zone */
+.upload-zone{
+  border:1.5px dashed var(--border2);border-radius:10px;
+  padding:18px;text-align:center;cursor:pointer;
+  position:relative;transition:border-color .2s,background .2s;
+}
+.upload-zone:hover,.upload-zone.has{
+  border-color:var(--accent);background:var(--accent-dim);
+}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone .u-main{font-size:13px;font-weight:600}
+.upload-zone .u-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.fname{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:5px}
+
+/* Auth row */
+.auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn-google{
+  display:inline-flex;align-items:center;gap:8px;
+  background:white;color:#1f1f1f;border:none;border-radius:8px;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;
+  padding:9px 14px;cursor:pointer;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);transition:box-shadow .2s;flex-shrink:0;
+}
+.btn-google:hover{box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.btn-google svg{width:16px;height:16px}
+.btn-signout{
+  background:transparent;border:1px solid var(--border2);
+  color:var(--muted);border-radius:7px;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;
+  padding:8px 12px;cursor:pointer;transition:color .2s,border-color .2s;
+}
+.btn-signout:hover{color:#ff6b6b;border-color:#ff6b6b}
+
+/* Spin */
+.spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(7,8,11,.25);border-top-color:#07080b;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--card);border:1px solid var(--accent);color:var(--accent);
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:10px 20px;border-radius:99px;
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:#ff6b6b;color:#ff6b6b}
+
+/* History */
+.history{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.history-title{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.07em;margin-bottom:10px}
+.history-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.history-item{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;font-size:12px;
+}
+.history-item .h-email{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-item .h-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0}
+.history-item .h-ok{color:var(--accent);font-size:13px;flex-shrink:0}
+.no-history{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+/* Setup note */
+.setup-note{
+  background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);
+  border-radius:9px;padding:12px 14px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:#c4a36a;line-height:1.7;margin-top:14px;
+}
+.setup-note a{color:#f5a623}
+.setup-note strong{color:#f5a623}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Header -->
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Quick<span>Apply</span></div>
+  </div>
+
+  <!-- Status chips -->
+  <div class="chips">
+    <div class="chip grey" id="authChip"><div class="dot"></div><span>Gmail: not connected</span></div>
+    <div class="chip grey" id="resumeChip"><div class="dot"></div><span>Resume: none</span></div>
+  </div>
+
+  <!-- Main action -->
+  <div class="main-label">PASTE RECRUITER EMAIL</div>
+  <input
+    class="email-input"
+    type="email"
+    id="toEmail"
+    placeholder="recruiter@company.com"
+    autocomplete="off"
+    oninput="updateBtn()"
+    onkeydown="if(event.key==='Enter') sendEmail()"
+  />
+
+  <button class="btn-send" id="sendBtn" onclick="sendEmail()" disabled>
+    <span id="sendLabel">🚀 Send Application</span>
+  </button>
+
+  <!-- History -->
+  <div class="history">
+    <div class="history-title">SENT HISTORY</div>
+    <div class="history-list" id="historyList"><div class="no-history">No emails sent yet</div></div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-toggle" onclick="toggleSettings()">
+    <span>⚙ Settings (name · message · resume · gmail)</span>
+    <span class="chevron" id="chevron">▼</span>
+  </div>
+
+  <div class="settings-panel hidden" id="settingsPanel">
+
+    <!-- Gmail auth -->
+    <div>
+      <label class="field-label">GMAIL CONNECTION</label>
+      <div>
+        <label class="field-label" style="margin-bottom:5px">OAUTH CLIENT ID</label>
+        <input class="field" type="text" id="clientId" placeholder="xxxxxx.apps.googleusercontent.com" oninput="saveSettings()"/>
+        <div class="setup-note">
+          Need a Client ID? <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → New Project → Enable <strong>Gmail API</strong> → Credentials → OAuth 2.0 Web Client → Add this page URL as origin.
+        </div>
+      </div>
+      <div class="auth-row" style="margin-top:10px">
+        <button class="btn-google" onclick="signIn()" id="signInBtn">
+          <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.6l7 5.4C12.4 13.9 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4C43.1 36.8 46.1 31 46.1 24.5z"/><path fill="#FBBC05" d="M10.7 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.7-4.6l-7-5.4A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l8.1-6.2z"/><path fill="#34A853" d="M24 47c5.6 0 10.3-1.8 13.7-5l-7-5.4c-1.8 1.2-4.1 1.9-6.7 1.9-6.3 0-11.6-4.3-13.5-10.1l-8.1 6.2C6.2 42.3 14.5 47 24 47z"/></svg>
+          Connect Gmail
+        </button>
+        <button class="btn-signout" id="signOutBtn" style="display:none" onclick="signOut()">Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Your name -->
+    <div>
+      <label class="field-label">YOUR NAME</label>
+      <input class="field" type="text" id="yourName" placeholder="Your Full Name" oninput="saveSettings()"/>
+    </div>
+
+    <!-- Subject -->
+    <div>
+      <label class="field-label">EMAIL SUBJECT</label>
+      <input class="field" type="text" id="subject" placeholder="Application for [Role] – Your Name" oninput="saveSettings()"/>
+    </div>
+
+    <!-- Body -->
+    <div>
+      <label class="field-label">EMAIL BODY</label>
+      <textarea class="field" id="body" rows="8" oninput="saveSettings()"></textarea>
+    </div>
+
+    <!-- Resume -->
+    <div>
+      <label class="field-label">RESUME (saved in browser)</label>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" onchange="handleFile(this)"/>
+        <div class="u-main">📎 Click to upload resume</div>
+        <div class="u-sub">PDF, DOC, DOCX — saved for all future sends</div>
+        <div class="fname" id="fileName"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="toast"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let accessToken = null;
+let resumeBase64 = null;
+let resumeMime   = null;
+let resumeName   = null;
+
+// ── Boot ───────────────────────────────────────────────────────────────
+window.onload = () => {
+  // Load saved settings
+  const load = k => localStorage.getItem(k) || '';
+  document.getElementById('clientId').value = load('qa_client_id');
+  document.getElementById('yourName').value = load('qa_name');
+  document.getElementById('subject').value  = load('qa_subject') || 'Application for the Position – ' + (load('qa_name') || 'Your Name');
+  document.getElementById('body').value     = load('qa_body')    || defaultBody(load('qa_name') || 'Your Name');
+
+  // Load saved resume
+  const savedResume = localStorage.getItem('qa_resume');
+  if (savedResume) {
+    const r = JSON.parse(savedResume);
+    resumeBase64 = r.data; resumeMime = r.mime; resumeName = r.name;
+    document.getElementById('fileName').textContent = '✓ ' + r.name;
+    document.getElementById('uploadZone').classList.add('has');
+    setChip('resumeChip', true, r.name);
+  }
+
+  renderHistory();
+  updateBtn();
+};
+
+function defaultBody(name) {
+  return `Dear Hiring Manager,
+
+I am writing to express my interest in joining your team. I have strong experience in my field and am eager to contribute.
+
+Please find my resume attached. I would love to discuss how I can add value to your organization.
+
+Thank you for your time.
+
+Best regards,
+${name}`;
+}
+
+// ── Settings persist ───────────────────────────────────────────────────
+function saveSettings() {
+  localStorage.setItem('qa_client_id', document.getElementById('clientId').value.trim());
+  localStorage.setItem('qa_name',      document.getElementById('yourName').value.trim());
+  localStorage.setItem('qa_subject',   document.getElementById('subject').value.trim());
+  localStorage.setItem('qa_body',      document.getElementById('body').value);
+}
+
+// ── Settings toggle ────────────────────────────────────────────────────
+function toggleSettings() {
+  const panel   = document.getElementById('settingsPanel');
+  const chevron = document.getElementById('chevron');
+  const open = panel.classList.toggle('hidden');
+  chevron.classList.toggle('open', !open);
+}
+
+// ── Gmail Auth ─────────────────────────────────────────────────────────
+function signIn() {
+  const clientId = document.getElementById('clientId').value.trim();
+  if (!clientId) { toast('Enter OAuth Client ID in settings first', true); return; }
+  if (typeof google === 'undefined') { toast('Google script loading, try again', true); return; }
+  saveSettings();
+  const tc = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/gmail.send',
+    callback: (resp) => {
+      if (resp.error) { toast('Auth failed: ' + resp.error, true); return; }
+      accessToken = resp.access_token;
+      setAuthUI(true); updateBtn(); toast('✅ Gmail connected!');
+    }
+  });
+  tc.requestAccessToken();
+}
+
+function signOut() {
+  if (accessToken && typeof google !== 'undefined') google.accounts.oauth2.revoke(accessToken, ()=>{});
+  accessToken = null; setAuthUI(false); updateBtn(); toast('Disconnected');
+}
+
+function setAuthUI(on) {
+  document.getElementById('signInBtn').style.display  = on ? 'none' : '';
+  document.getElementById('signOutBtn').style.display = on ? '' : 'none';
+  setChip('authChip', on, on ? 'Gmail: connected' : 'Gmail: not connected');
+}
+
+function setChip(id, active, text) {
+  const el = document.getElementById(id);
+  el.className = 'chip ' + (active ? 'green' : 'grey');
+  el.innerHTML = `<div class="dot"></div><span>${text}</span>`;
+}
+
+// ── File ───────────────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    resumeBase64 = reader.result.split(',')[1];
+    resumeMime   = file.type || 'application/octet-stream';
+    resumeName   = file.name;
+    // Save in localStorage (base64 — works for files up to ~3MB)
+    try {
+      localStorage.setItem('qa_resume', JSON.stringify({ data: resumeBase64, mime: resumeMime, name: resumeName }));
+    } catch(e) { /* quota exceeded for large files */ }
+    document.getElementById('fileName').textContent = '✓ ' + file.name;
+    document.getElementById('uploadZone').classList.add('has');
+    setChip('resumeChip', true, file.name.length > 22 ? file.name.slice(0,20)+'…' : file.name);
+    toast('📎 Resume saved!');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Send ───────────────────────────────────────────────────────────────
+function updateBtn() {
+  const ok = accessToken && document.getElementById('toEmail').value.includes('@');
+  document.getElementById('sendBtn').disabled = !ok;
+}
+
+async function sendEmail() {
+  const to = document.getElementById('toEmail').value.trim();
+  if (!to || !accessToken) return;
+
+  const name    = document.getElementById('yourName').value.trim() || 'Applicant';
+  const subject = document.getElementById('subject').value.trim()  || 'Job Application';
+  const body    = document.getElementById('body').value.trim();
+
+  setSending(true);
+  try {
+    let raw;
+    if (resumeBase64) {
+      raw = buildMIME(name, to, subject, body, resumeBase64, resumeMime, resumeName);
+    } else {
+      raw = buildSimple(name, to, subject, body);
+    }
+
+    const resp = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw })
+    });
+
+    const data = await resp.json();
+    if (data.id) {
+      toast('✅ Sent to ' + to + '!');
+      saveHistory(to);
+      document.getElementById('toEmail').value = '';
+      updateBtn();
+    } else {
+      throw new Error(data.error?.message || 'Unknown error');
+    }
+  } catch(err) {
+    toast('❌ ' + err.message, true);
+    if (err.message.includes('401')) { accessToken = null; setAuthUI(false); updateBtn(); }
+  } finally {
+    setSending(false);
+  }
+}
+
+// ── MIME builders ──────────────────────────────────────────────────────
+function b64url(str) {
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function buildSimple(from, to, subject, body) {
+  const msg = [`From: ${from}`,`To: ${to}`,`Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+    `MIME-Version: 1.0`,`Content-Type: text/plain; charset=UTF-8`,`Content-Transfer-Encoding: base64`,``,
+    btoa(unescape(encodeURIComponent(body)))].join('\r\n');
+  return b64url(msg);
+}
+
+function buildMIME(from, to, subject, body, fileData, fileMime, fileName) {
+  const boundary = 'bnd_' + Date.now();
+  const raw = [
+    `From: ${from}`,`To: ${to}`,
+    `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+    `MIME-Version: 1.0`,`Content-Type: multipart/mixed; boundary="${boundary}"`,``,
+    `--${boundary}`,`Content-Type: text/plain; charset=UTF-8`,`Content-Transfer-Encoding: base64`,``,
+    btoa(unescape(encodeURIComponent(body))),``,
+    `--${boundary}`,`Content-Type: ${fileMime}; name="${fileName}"`,
+    `Content-Disposition: attachment; filename="${fileName}"`,
+    `Content-Transfer-Encoding: base64`,``,fileData,``,`--${boundary}--`
+  ].join('\r\n');
+  return b64url(raw);
+}
+
+// ── History ────────────────────────────────────────────────────────────
+function saveHistory(email) {
+  const h = JSON.parse(localStorage.getItem('qa_history') || '[]');
+  h.unshift({ email, time: new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) });
+  if (h.length > 20) h.pop();
+  localStorage.setItem('qa_history', JSON.stringify(h));
+  renderHistory();
+}
+
+function renderHistory() {
+  const h = JSON.parse(localStorage.getItem('qa_history') || '[]');
+  const el = document.getElementById('historyList');
+  if (!h.length) { el.innerHTML = '<div class="no-history">No emails sent yet</div>'; return; }
+  el.innerHTML = h.map(i => `
+    <div class="history-item">
+      <span class="h-ok">✓</span>
+      <span class="h-email">${i.email}</span>
+      <span class="h-time">${i.time}</span>
+    </div>`).join('');
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────
+function setSending(on) {
+  document.getElementById('sendBtn').disabled = on;
+  document.getElementById('sendLabel').innerHTML = on
+    ? '<span class="spin"></span> Sending…'
+    : '🚀 Send Application';
+}
+
+let tt;
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show' + (err ? ' err' : '');
+  clearTimeout(tt); tt = setTimeout(() => el.className = '', 3200);
+}
+</script>
+</body>
+</html>
